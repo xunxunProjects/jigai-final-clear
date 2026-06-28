@@ -247,7 +247,7 @@ export default function App() {
   );
 
   const setDailyGoal = useCallback(
-    (goal: number) => setSettings((s) => ({ ...s, dailyGoal: goal })),
+    (goal: number) => setSettings((s) => ({ ...s, dailyGoal: Number.isFinite(goal) ? goal : 20 })),
     [setSettings],
   );
 
@@ -313,8 +313,17 @@ export default function App() {
   }, []);
 
   const setFlashcardCount = useCallback(
-    (count: number) => setSettings((s) => ({ ...s, flashcardCount: count })),
+    (count: number) =>
+      setSettings((s) => ({ ...s, flashcardCount: Number.isFinite(count) ? count : 20 })),
     [setSettings],
+  );
+
+  // Older saved settings may lack these fields; fall back to safe numbers so
+  // the steppers never start from undefined (which would produce NaN).
+  const dailyGoal = Number.isFinite(settings.dailyGoal) ? settings.dailyGoal : 20;
+  const flashcardCount = Math.min(
+    Math.max(20, Number.isFinite(settings.flashcardCount) ? settings.flashcardCount : 20),
+    Math.max(20, totalFlashcardEligible),
   );
 
   const startFlashcard = useCallback(
@@ -402,12 +411,12 @@ export default function App() {
   useEffect(() => {
     const prev = prevTodayDoneRef.current;
     prevTodayDoneRef.current = stats.todayDone;
-    if (prev < settings.dailyGoal && stats.todayDone >= settings.dailyGoal) {
+    if (prev < dailyGoal && stats.todayDone >= dailyGoal) {
       setGoalToast(true);
       const timer = setTimeout(() => setGoalToast(false), 3500);
       return () => clearTimeout(timer);
     }
-  }, [stats.todayDone, settings.dailyGoal]);
+  }, [stats.todayDone, dailyGoal]);
 
   // ---- Resolve flashcard session into renderable items ------------------
   const activeFlashcard = useMemo(() => {
@@ -460,12 +469,12 @@ export default function App() {
           todayDone={stats.todayDone}
           doneCount={stats.done}
           wrongCount={stats.wrong}
-          dailyGoal={settings.dailyGoal}
+          dailyGoal={dailyGoal}
           streak={streak}
           onOpen={openSubject}
           onStartDeck={startDeck}
           favorites={favorites}
-          flashcardCount={settings.flashcardCount}
+          flashcardCount={flashcardCount}
           onStartFlashcard={startFlashcard}
         />
       )}
@@ -474,9 +483,9 @@ export default function App() {
         <Settings
           theme={theme}
           onToggleTheme={toggleTheme}
-          dailyGoal={settings.dailyGoal}
+          dailyGoal={dailyGoal}
           onSetGoal={setDailyGoal}
-          flashcardCount={settings.flashcardCount}
+          flashcardCount={flashcardCount}
           totalFlashcardEligible={totalFlashcardEligible}
           onSetFlashcardCount={setFlashcardCount}
           todayDone={stats.todayDone}
