@@ -1,6 +1,7 @@
 import type { Question } from '../types';
 import { Header } from './Header';
 import { QuestionView } from './QuestionView';
+import { RichText } from './RichText';
 import { ArrowLeft, ChevronRight, Spark } from './icons';
 
 export interface FlashcardItem {
@@ -22,6 +23,7 @@ interface FlashcardViewProps {
   onExit: () => void;
   favorites: Record<string, boolean>;
   onToggleFavorite: (qid: string) => void;
+  shuffleOptions?: boolean;
 }
 
 export function FlashcardView({
@@ -38,6 +40,7 @@ export function FlashcardView({
   onExit,
   favorites,
   onToggleFavorite,
+  shuffleOptions,
 }: FlashcardViewProps) {
   const total = items.length;
   const current = items[position];
@@ -83,7 +86,7 @@ export function FlashcardView({
               知识点
             </div>
             <p className="fc-stem-hint">考查：{current.question.stem}</p>
-            <p className="fc-knowledge">{current.question.knowledgePoint}</p>
+            <p className="fc-knowledge"><RichText text={current.question.knowledgePoint} /></p>
             <button type="button" className="btn btn--primary fc-flip-btn" onClick={onFlip}>
               开始答题
               <ChevronRight size={18} />
@@ -99,6 +102,7 @@ export function FlashcardView({
               onSelect={(label) => !answered && onAnswer(position, label, current.question)}
               isFavorite={favorites[current.question.id] ?? false}
               onToggleFavorite={() => onToggleFavorite(current.question.id)}
+              shuffleOptions={shuffleOptions}
             />
             {answered && (
               <div className="fc-next">

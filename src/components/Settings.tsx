@@ -11,6 +11,8 @@ interface SettingsProps {
   randomCount: number;
   totalQuestions: number;
   onSetRandomCount: (count: number) => void;
+  shuffleOptions: boolean;
+  onToggleShuffleOptions: () => void;
   todayDone: number;
   doneCount: number;
   onClearToday: () => void;
@@ -28,6 +30,8 @@ export function Settings({
   randomCount,
   totalQuestions,
   onSetRandomCount,
+  shuffleOptions,
+  onToggleShuffleOptions,
   todayDone,
   doneCount,
   onClearToday,
@@ -147,6 +151,23 @@ export function Settings({
               <span className="settings-stepper-unit">题</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="home-section">
+        <h2 className="group-label">答题选项</h2>
+        <div className="list">
+          <button type="button" className="list-row" onClick={onToggleShuffleOptions}>
+            <span className="row-main">
+              <span className="row-title">选项乱序</span>
+              <span className="row-sub">每道题的选项随机打乱顺序显示</span>
+            </span>
+            <span className="row-trail">
+              <span className={`toggle-pill${shuffleOptions ? ' toggle-pill--on' : ''}`} aria-hidden="true">
+                <span className="toggle-thumb" />
+              </span>
+            </span>
+          </button>
         </div>
       </section>
 

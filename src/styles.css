@@ -1265,3 +1265,52 @@ sup {
     border-radius: var(--radius-lg);
   }
 }
+
+/* ============================================================
+   Highlight mark (==text== in knowledge points)
+   ============================================================ */
+mark.hl {
+  background: rgba(255, 213, 0, 0.38);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+:root[data-theme='dark'] mark.hl {
+  background: rgba(255, 213, 0, 0.22);
+  color: #ffe566;
+}
+
+/* ============================================================
+   Toggle pill (settings)
+   ============================================================ */
+.toggle-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  transition: background 0.18s ease;
+  flex-shrink: 0;
+}
+
+.toggle-pill--on {
+  background: var(--accent);
+}
+
+.toggle-thumb {
+  position: absolute;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+  transition: transform 0.18s ease;
+}
+
+.toggle-pill--on .toggle-thumb {
+  transform: translateX(18px);
+}

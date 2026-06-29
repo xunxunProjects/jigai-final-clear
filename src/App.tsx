@@ -23,6 +23,7 @@ interface Settings {
   dailyGoal: number;
   flashcardCount: number;
   randomCount: number;
+  shuffleOptions: boolean;
 }
 type Activity = Record<string, number>;
 
@@ -88,6 +89,7 @@ export default function App() {
     dailyGoal: 20,
     flashcardCount: 20,
     randomCount: 30,
+    shuffleOptions: false,
   });
   const [activity, setActivity] = useLocalStorage<Activity>('quiz.activity.v1', {});
   const [history, setHistory] = useLocalStorage<History>('quiz.history.v1', {});
@@ -340,6 +342,12 @@ export default function App() {
     [setSettings],
   );
 
+  const shuffleOptions = settings.shuffleOptions ?? false;
+  const toggleShuffleOptions = useCallback(
+    () => setSettings((s) => ({ ...s, shuffleOptions: !s.shuffleOptions })),
+    [setSettings],
+  );
+
   const startRandomDeck = useCallback(
     (count: number, title: string) => {
       const pool: DeckItem[] = [];
@@ -525,6 +533,8 @@ export default function App() {
           randomCount={randomCount}
           totalQuestions={totalQuestions}
           onSetRandomCount={setRandomCount}
+          shuffleOptions={shuffleOptions}
+          onToggleShuffleOptions={toggleShuffleOptions}
           todayDone={stats.todayDone}
           doneCount={stats.done}
           onClearToday={clearTodayProgress}
@@ -554,6 +564,7 @@ export default function App() {
           onShowResults={() => setView('results')}
           favorites={favorites}
           onToggleFavorite={toggleFavorite}
+          shuffleOptions={shuffleOptions}
         />
       )}
 
@@ -572,6 +583,7 @@ export default function App() {
           onExit={finishFlashcard}
           favorites={favorites}
           onToggleFavorite={toggleFavorite}
+          shuffleOptions={shuffleOptions}
         />
       )}
 

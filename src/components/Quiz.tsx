@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Question } from '../types';
 import { Header } from './Header';
-import { QuestionView } from './QuestionView';
+import { QuestionView, shuffledOptions } from './QuestionView';
 import { ArrowLeft, ChevronLeft, ChevronRight, Close, Grid } from './icons';
 
 interface QuizProps {
@@ -22,6 +22,7 @@ interface QuizProps {
   onShowResults: () => void;
   favorites?: Record<string, boolean>;
   onToggleFavorite?: (qid: string) => void;
+  shuffleOptions?: boolean;
 }
 
 export function Quiz({
@@ -38,6 +39,7 @@ export function Quiz({
   onShowResults,
   favorites,
   onToggleFavorite,
+  shuffleOptions,
 }: QuizProps) {
   const total = questions.length;
   const question = questions[position];
@@ -81,13 +83,23 @@ export function Quiz({
       if (e.key === 'ArrowLeft') return goPrev();
       if (answered) return;
 
+      const displayOpts =
+        shuffleOptions && question.type !== 'judge'
+          ? shuffledOptions(question.options, question.id)
+          : question.options;
+
       let optIdx = -1;
       const key = e.key.toUpperCase();
       if (/^[1-9]$/.test(e.key)) optIdx = Number(e.key) - 1;
-      else if (/^[A-G]$/.test(key)) optIdx = key.charCodeAt(0) - 65;
+      else if (/^[A-G]$/.test(key)) {
+        // Letter key: find by original label so A always means option A
+        const idx = displayOpts.findIndex((o) => o.label === key);
+        if (idx >= 0) onSelect(position, key);
+        return;
+      }
 
-      if (optIdx >= 0 && optIdx < question.options.length) {
-        onSelect(position, question.options[optIdx].label);
+      if (optIdx >= 0 && optIdx < displayOpts.length) {
+        onSelect(position, displayOpts[optIdx].label);
       }
     }
     window.addEventListener('keydown', onKey);
@@ -156,6 +168,7 @@ export function Quiz({
           onSelect={(label) => onSelect(position, label)}
           isFavorite={favorites?.[question.id] ?? false}
           onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(question.id) : undefined}
+          shuffleOptions={shuffleOptions}
         />
       </main>
 

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { Question } from '../types';
 import { RichText } from './RichText';
 import { Bookmark, BookmarkFilled, Check, Close } from './icons';
@@ -12,14 +13,51 @@ interface QuestionViewProps {
   context?: string;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
+  /** When true, options are shuffled in a deterministic order per question. */
+  shuffleOptions?: boolean;
+}
+
+function strHash(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+export function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const a = arr.slice();
+  let s = seed || 1;
+  for (let i = a.length - 1; i > 0; i--) {
+    s ^= s << 13; s ^= s >>> 17; s ^= s << 5;
+    const j = (s >>> 0) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export function shuffledOptions<T extends { label: string }>(
+  opts: T[],
+  questionId: string,
+): T[] {
+  return seededShuffle(opts, strHash(questionId));
 }
 
 const judgeBadge: Record<string, string> = { T: '对', F: '错' };
 
 /** A single question: meta, stem, options, and (once answered) the explanation. */
-export function QuestionView({ question, selected, onSelect, context, isFavorite, onToggleFavorite }: QuestionViewProps) {
+export function QuestionView({ question, selected, onSelect, context, isFavorite, onToggleFavorite, shuffleOptions }: QuestionViewProps) {
   const answered = selected !== undefined;
   const correct = selected === question.answer;
+
+  const displayOptions = useMemo(
+    () =>
+      shuffleOptions && question.type !== 'judge'
+        ? shuffledOptions(question.options, question.id)
+        : question.options,
+    [shuffleOptions, question.id, question.options, question.type],
+  );
 
   return (
     <div className="question">
@@ -43,7 +81,7 @@ export function QuestionView({ question, selected, onSelect, context, isFavorite
       </h2>
 
       <div className="options">
-        {question.options.map((opt) => {
+        {displayOptions.map((opt) => {
           const isAnswer = opt.label === question.answer;
           const isChosen = opt.label === selected;
           let cls = 'option';
