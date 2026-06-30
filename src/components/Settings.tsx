@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Moon, Sun } from './icons';
 
 interface SettingsProps {
@@ -18,6 +19,9 @@ interface SettingsProps {
   onToggleShuffleOptions: () => void;
   todayDone: number;
   doneCount: number;
+  favCount: number;
+  onExportProgress: () => void;
+  onImportProgress: (file: File) => void | Promise<void>;
   onClearToday: () => void;
   onClearAll: () => void;
 }
@@ -40,9 +44,13 @@ export function Settings({
   onToggleShuffleOptions,
   todayDone,
   doneCount,
+  favCount,
+  onExportProgress,
+  onImportProgress,
   onClearToday,
   onClearAll,
 }: SettingsProps) {
+  const importRef = useRef<HTMLInputElement>(null);
   const adjustGoal = (delta: number) =>
     onSetGoal(Math.max(5, Math.min(200, dailyGoal + delta)));
   const adjustFcCount = (delta: number) =>
@@ -213,6 +221,35 @@ export function Settings({
       <section className="home-section">
         <h2 className="group-label">数据管理</h2>
         <div className="list">
+          <button type="button" className="list-row" onClick={onExportProgress}>
+            <span className="row-main">
+              <span className="row-title">导出进度</span>
+              <span className="row-sub">
+                JSON · {doneCount} 道答题记录 · {favCount} 道收藏
+              </span>
+            </span>
+          </button>
+          <button
+            type="button"
+            className="list-row"
+            onClick={() => importRef.current?.click()}
+          >
+            <span className="row-main">
+              <span className="row-title">导入进度</span>
+              <span className="row-sub">从 JSON 文件恢复答题记录与收藏</span>
+            </span>
+          </button>
+          <input
+            ref={importRef}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void onImportProgress(file);
+              e.target.value = '';
+            }}
+          />
           <button
             type="button"
             className="list-row"
@@ -242,7 +279,9 @@ export function Settings({
         </div>
       </section>
 
-      <footer className="home-footer">进度与目标保存在本地浏览器，随时可以继续。</footer>
+      <footer className="home-footer">
+        进度以 JSON 保存在本地，可导出备份或在其他设备导入。
+      </footer>
     </main>
   );
 }

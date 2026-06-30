@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { subjects, subjectMap } from './data/questions';
+import {
+  createProgressBackup,
+  downloadProgressBackup,
+  favoritesToRecord,
+  parseProgressBackup,
+} from './data/progressBackup';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import type { DeckItem, DeckSession, FlashcardSession, HistoryEntry, Question, Session } from './types';
 import { Home } from './components/Home';
@@ -309,7 +315,76 @@ export default function App() {
     setActivity({});
     setSessions({});
     setDeck(null);
-  }, [setHistory, setActivity, setSessions, setDeck]);
+    setFlashcard(null);
+  }, [setHistory, setActivity, setSessions, setDeck, setFlashcard]);
+
+  const exportProgress = useCallback(() => {
+    downloadProgressBackup(
+      createProgressBackup({
+        theme,
+        settings,
+        history,
+        favorites,
+        activity,
+        sessions,
+        deck,
+        flashcard,
+      }),
+    );
+  }, [theme, settings, history, favorites, activity, sessions, deck, flashcard]);
+
+  const importProgress = useCallback(
+    async (file: File) => {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(await file.text());
+      } catch {
+        window.alert('JSON 文件格式无效，请检查文件内容。');
+        return;
+      }
+
+      const result = parseProgressBackup(parsed);
+      if (!result) {
+        window.alert('无法识别的进度文件。请使用本应用导出的 JSON 文件。');
+        return;
+      }
+
+      const { backup, skippedHistory, skippedFavorites } = result;
+      const skipped = skippedHistory + skippedFavorites;
+      const ok = window.confirm(
+        `确认导入进度？\n\n将覆盖当前数据：\n· 答题记录 ${backup.summary.answeredCount} 道\n· 收藏 ${backup.summary.favoriteCount} 道\n· 科目练习进度 ${backup.summary.sessionSubjects.length} 科` +
+          (skipped > 0 ? `\n\n（文件中 ${skipped} 条无效记录将被忽略）` : ''),
+      );
+      if (!ok) return;
+
+      setTheme(backup.theme);
+      setSettings(backup.settings);
+      setHistory(backup.history);
+      setFavorites(favoritesToRecord(backup.favorites));
+      setActivity(backup.activity);
+      setSessions(backup.sessions);
+      setDeck(backup.deck);
+      setFlashcard(backup.flashcard);
+      setView(tabRef.current);
+      setActiveId(null);
+
+      setImportToastMsg(
+        skipped > 0
+          ? `进度已导入（跳过 ${skipped} 条无效记录）`
+          : '进度已导入',
+      );
+    },
+    [
+      setTheme,
+      setSettings,
+      setHistory,
+      setFavorites,
+      setActivity,
+      setSessions,
+      setDeck,
+      setFlashcard,
+    ],
+  );
 
   // ---- Favorites -------------------------------------------------------
   const toggleFavorite = useCallback(
@@ -547,6 +622,7 @@ export default function App() {
 
   // ---- Daily goal toast ------------------------------------------------
   const [goalToast, setGoalToast] = useState(false);
+  const [importToastMsg, setImportToastMsg] = useState('');
   const prevTodayDoneRef = useRef(stats.todayDone);
   useEffect(() => {
     const prev = prevTodayDoneRef.current;
@@ -557,6 +633,17 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [stats.todayDone, dailyGoal]);
+
+  useEffect(() => {
+    if (!importToastMsg) return;
+    const timer = setTimeout(() => setImportToastMsg(''), 3500);
+    return () => clearTimeout(timer);
+  }, [importToastMsg]);
+
+  const favCount = useMemo(
+    () => Object.values(favorites).filter(Boolean).length,
+    [favorites],
+  );
 
   // ---- Resolve flashcard session into renderable items ------------------
   const activeFlashcard = useMemo(() => {
@@ -607,6 +694,7 @@ export default function App() {
   return (
     <div className="app">
       <Toast visible={goalToast}>🎉 今日目标完成！</Toast>
+      <Toast visible={importToastMsg.length > 0}>{importToastMsg}</Toast>
 
       {view === 'home' && (
         <Home
@@ -655,6 +743,9 @@ export default function App() {
           onToggleShuffleOptions={toggleShuffleOptions}
           todayDone={stats.todayDone}
           doneCount={stats.done}
+          favCount={favCount}
+          onExportProgress={exportProgress}
+          onImportProgress={importProgress}
           onClearToday={clearTodayProgress}
           onClearAll={clearAllProgress}
         />
